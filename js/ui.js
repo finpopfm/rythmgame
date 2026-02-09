@@ -1,5 +1,5 @@
 // FINPOP Rhythm Game — UI Manager
-// Manages HTML overlay screens: Title, Results, Share
+// Manages HTML overlay screens: Title, Results, Share, Pause, Calibration
 
 import { LANE_COLORS } from './renderer.js';
 
@@ -8,14 +8,16 @@ export class UI {
     this.titleScreen = null;
     this.resultsScreen = null;
     this.loadingScreen = null;
-    this.onStart = null;
-    this.onReplay = null;
+    this.pauseScreen = null;
+    this.calibrationScreen = null;
   }
 
   init() {
     this.titleScreen = document.getElementById('title-screen');
     this.resultsScreen = document.getElementById('results-screen');
     this.loadingScreen = document.getElementById('loading-screen');
+    this.pauseScreen = document.getElementById('pause-screen');
+    this.calibrationScreen = document.getElementById('calibration-screen');
   }
 
   showLoading(progress = 0, message = 'Loading...') {
@@ -29,21 +31,47 @@ export class UI {
   }
 
   hideLoading() {
-    if (this.loadingScreen) {
-      this.loadingScreen.classList.remove('active');
-    }
+    if (this.loadingScreen) this.loadingScreen.classList.remove('active');
   }
 
   showTitle() {
-    if (this.titleScreen) {
-      this.titleScreen.classList.add('active');
-    }
+    if (this.titleScreen) this.titleScreen.classList.add('active');
     this.hideResults();
   }
 
   hideTitle() {
-    if (this.titleScreen) {
-      this.titleScreen.classList.remove('active');
+    if (this.titleScreen) this.titleScreen.classList.remove('active');
+  }
+
+  showPause() {
+    if (this.pauseScreen) this.pauseScreen.classList.add('active');
+  }
+
+  hidePause() {
+    if (this.pauseScreen) this.pauseScreen.classList.remove('active');
+  }
+
+  showCalibration() {
+    if (this.calibrationScreen) this.calibrationScreen.classList.add('active');
+  }
+
+  hideCalibration() {
+    if (this.calibrationScreen) this.calibrationScreen.classList.remove('active');
+  }
+
+  showBestScore() {
+    const el = document.getElementById('title-best');
+    if (!el) return;
+    try {
+      const best = JSON.parse(localStorage.getItem('finpop_best') || 'null');
+      if (best && best.score) {
+        el.textContent = `BEST: Grade ${best.grade} | ${best.score.toLocaleString()} | ${best.difficulty || 'NORMAL'}`;
+        el.style.display = 'block';
+      } else {
+        el.style.display = 'none';
+      }
+    } catch {
+      el.style.display = 'none';
     }
   }
 
@@ -51,38 +79,26 @@ export class UI {
     if (!this.resultsScreen) return;
     this.resultsScreen.classList.add('active');
 
-    // Fill in stats
     const set = (id, val) => {
       const el = this.resultsScreen.querySelector(`#${id}`);
       if (el) el.textContent = val;
     };
 
-    set('result-grade', stats.grade);
-    set('result-score', stats.score.toLocaleString());
-    set('result-approval', `${stats.approvalRate.toFixed(1)}%`);
-    set('result-volume', stats.volume);
-    set('result-streak', `${stats.maxCombo}x`);
-    set('result-approved-count', stats.counts.APPROVED || 0);
-    set('result-pending-count', stats.counts.PENDING || 0);
-    set('result-declined-count', stats.counts.DECLINED || 0);
-    set('result-chargeback-count', stats.counts.CHARGEBACK || 0);
-
-    // Grade color
+    // Grade: reveal with animation
     const gradeEl = this.resultsScreen.querySelector('#result-grade');
     if (gradeEl) {
+      gradeEl.textContent = '';
+      gradeEl.classList.remove('grade-reveal');
       const gradeColors = { S: '#FFD700', A: '#00ff88', B: '#00d4ff', C: '#ff6600', D: '#ff0040' };
       gradeEl.style.color = gradeColors[stats.grade] || '#ffffff';
       gradeEl.style.textShadow = `0 0 30px ${gradeColors[stats.grade] || '#ffffff'}`;
+      setTimeout(() => {
+        gradeEl.textContent = stats.grade;
+        gradeEl.classList.add('grade-reveal');
+      }, 400);
     }
 
-    // Risk level
-    const riskEl = this.resultsScreen.querySelector('#result-risk');
-    if (riskEl) {
-      riskEl.textContent = stats.riskLevel.level;
-      riskEl.style.color = stats.riskLevel.color;
-    }
-
-    // Character comment based on grade
+    // Comment
     const commentEl = this.resultsScreen.querySelector('#result-comment');
     if (commentEl) {
       const comments = {
@@ -92,40 +108,89 @@ export class UI {
         C: '"Risk levels elevated. Tighten controls." — IRIS',
         D: '"Compliance review required. Immediately." — VERA',
       };
-      commentEl.textContent = comments[stats.grade] || comments.C;
+      commentEl.textContent = '';
+      setTimeout(() => { commentEl.textContent = comments[stats.grade] || comments.C; }, 1200);
+    }
+
+    // Animated countUp for stats
+    this._countUp('result-score', 0, stats.score, 1000, 800, v => v.toLocaleString());
+    this._countUp('result-approval', 0, stats.approvalRate, 1000, 900, v => `${v.toFixed(1)}%`);
+    this._countUp('result-volume-raw', 0, stats.score * 100, 1000, 1000, v => {
+      if (v >= 1e9) return `$${(v/1e9).toFixed(1)}B`;
+      if (v >= 1e6) return `$${(v/1e6).toFixed(1)}M`;
+      if (v >= 1e3) return `$${(v/1e3).toFixed(1)}K`;
+      return `$${Math.round(v)}`;
+    });
+    // Volume uses raw number for animation
+    set('result-volume', '$0');
+    setTimeout(() => set('result-volume', stats.volume), 1100);
+    this._countUp('result-streak', 0, stats.maxCombo, 800, 1100, v => `${Math.round(v)}x`);
+
+    // Breakdown — staggered fade-in
+    const breakdownIds = ['result-approved-count', 'result-pending-count', 'result-declined-count', 'result-chargeback-count'];
+    const breakdownVals = [stats.counts.APPROVED || 0, stats.counts.PENDING || 0, stats.counts.DECLINED || 0, stats.counts.CHARGEBACK || 0];
+    breakdownIds.forEach((id, i) => {
+      const el = this.resultsScreen.querySelector(`#${id}`);
+      if (el) {
+        el.textContent = '0';
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(10px)';
+        setTimeout(() => {
+          el.style.transition = 'opacity 0.3s, transform 0.3s';
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+          el.textContent = breakdownVals[i];
+        }, 1400 + i * 100);
+      }
+    });
+
+    // Risk level
+    const riskEl = this.resultsScreen.querySelector('#result-risk');
+    if (riskEl) {
+      riskEl.textContent = stats.riskLevel.level;
+      riskEl.style.color = stats.riskLevel.color;
     }
   }
 
+  _countUp(id, from, to, duration, delay, format) {
+    const el = this.resultsScreen.querySelector(`#${id}`);
+    if (!el) return;
+    el.textContent = format(from);
+    setTimeout(() => {
+      const start = performance.now();
+      const animate = (now) => {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = from + (to - from) * eased;
+        el.textContent = format(current);
+        if (progress < 1) requestAnimationFrame(animate);
+      };
+      requestAnimationFrame(animate);
+    }, delay);
+  }
+
   hideResults() {
-    if (this.resultsScreen) {
-      this.resultsScreen.classList.remove('active');
-    }
+    if (this.resultsScreen) this.resultsScreen.classList.remove('active');
   }
 
   async generateShareImage(stats) {
     const canvas = document.createElement('canvas');
-    const w = 600;
-    const h = 340;
+    const w = 600, h = 340;
     canvas.width = w * 2;
     canvas.height = h * 2;
     const ctx = canvas.getContext('2d');
     ctx.scale(2, 2);
 
-    // Background
     ctx.fillStyle = '#0a0a1a';
     ctx.fillRect(0, 0, w, h);
 
-    // Grid pattern
     ctx.strokeStyle = 'rgba(0,212,255,0.06)';
     ctx.lineWidth = 0.5;
-    for (let x = 0; x < w; x += 30) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-    }
-    for (let y = 0; y < h; y += 30) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-    }
+    for (let x = 0; x < w; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (let y = 0; y < h; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
 
-    // Header
     ctx.fillStyle = 'rgba(0,212,255,0.1)';
     ctx.fillRect(0, 0, w, 50);
     ctx.font = 'bold 16px monospace';
@@ -137,7 +202,6 @@ export class UI {
     ctx.fillStyle = '#00ff88';
     ctx.fillText('● VERIFIED', w - 20, 32);
 
-    // Grade
     const gradeColors = { S: '#FFD700', A: '#00ff88', B: '#00d4ff', C: '#ff6600', D: '#ff0040' };
     ctx.font = 'bold 80px monospace';
     ctx.textAlign = 'center';
@@ -150,7 +214,6 @@ export class UI {
     ctx.fillStyle = '#ffffff';
     ctx.fillText('RISK GRADE', 100, 185);
 
-    // Stats
     ctx.textAlign = 'left';
     const statsData = [
       { label: 'SCORE', value: stats.score.toLocaleString(), color: '#ffffff' },
@@ -159,7 +222,6 @@ export class UI {
       { label: 'MAX STREAK', value: `${stats.maxCombo}x`, color: '#00d4ff' },
       { label: 'RISK LEVEL', value: stats.riskLevel.level, color: stats.riskLevel.color },
     ];
-
     for (let i = 0; i < statsData.length; i++) {
       const y = 85 + i * 34;
       ctx.font = '10px monospace';
@@ -170,28 +232,12 @@ export class UI {
       ctx.fillText(statsData[i].value, 200, y + 20);
     }
 
-    // Lane colors bar at bottom
-    const barY = h - 50;
-    for (let i = 0; i < 4; i++) {
-      const bw = (w - 40) / 4;
-      ctx.fillStyle = `rgba(${hexToRgb(LANE_COLORS[i].main)},0.3)`;
-      ctx.fillRect(20 + i * bw, barY, bw - 4, 6);
-      ctx.font = '9px monospace';
-      ctx.fillStyle = LANE_COLORS[i].main;
-      ctx.textAlign = 'center';
-      ctx.fillText(LANE_COLORS[i].name, 20 + i * bw + bw / 2, barY + 20);
-    }
-
-    // Footer
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillText('PLAY AT FINPOP.FM', w / 2, h - 10);
+    ctx.fillText('PLAY AT BEAT.FINPOP.FM', w / 2, h - 10);
 
-    // Convert to blob
-    return new Promise(resolve => {
-      canvas.toBlob(blob => resolve(blob), 'image/png');
-    });
+    return new Promise(resolve => { canvas.toBlob(blob => resolve(blob), 'image/png'); });
   }
 
   async share(stats) {
@@ -202,38 +248,17 @@ export class UI {
       try {
         const blob = await this.generateShareImage(stats);
         const file = new File([blob], 'finpop-report.png', { type: 'image/png' });
-        await navigator.share({
-          title: 'FINPOP — Payments on Lock',
-          text,
-          url,
-          files: [file],
-        });
+        await navigator.share({ title: 'PAYMENTS ON LOCK: Beat Edition', text, url, files: [file] });
         return true;
       } catch (e) {
-        // Fallback: share without image
-        try {
-          await navigator.share({ title: 'FINPOP', text, url });
-          return true;
-        } catch (e2) { /* user cancelled */ }
+        try { await navigator.share({ title: 'FINPOP', text, url }); return true; } catch { /* cancelled */ }
       }
     }
-
-    // Desktop fallback: copy URL
-    try {
-      await navigator.clipboard.writeText(`${text}\n${url}`);
-      return true;
-    } catch (e) {
-      return false;
-    }
+    try { await navigator.clipboard.writeText(`${text}\n${url}`); return true; } catch { return false; }
   }
 
   getShareUrl(stats) {
-    const params = new URLSearchParams({
-      s: Math.round(stats.approvalRate),
-      g: stats.grade,
-      v: stats.maxCombo,
-      sc: stats.score,
-    });
+    const params = new URLSearchParams({ s: Math.round(stats.approvalRate), g: stats.grade, v: stats.maxCombo, sc: stats.score });
     return `${window.location.origin}${window.location.pathname}#${params.toString()}`;
   }
 
@@ -248,15 +273,6 @@ export class UI {
         maxCombo: parseInt(params.get('v')) || 0,
         score: parseInt(params.get('sc')) || 0,
       };
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   }
-}
-
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r},${g},${b}`;
 }

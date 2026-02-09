@@ -149,19 +149,21 @@ html, body {
 }
 
 .title-logo {
-  font-size: clamp(36px, 8vw, 56px);
+  font-size: clamp(28px, 7vw, 48px);
   font-weight: 700;
   color: var(--text);
   margin-bottom: 4px;
-  letter-spacing: 6px;
+  letter-spacing: 4px;
+  line-height: 1.15;
   text-shadow: 0 0 40px rgba(0, 212, 255, 0.3);
 }
 
 .title-track {
-  font-size: clamp(14px, 3vw, 18px);
+  font-size: clamp(13px, 2.5vw, 17px);
   color: var(--gold);
   margin-bottom: 24px;
   letter-spacing: 3px;
+  font-style: italic;
   text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
@@ -227,9 +229,148 @@ html, body {
   50% { opacity: 1; }
 }
 
+/* Difficulty selector */
+.title-difficulty {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.diff-btn {
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 6px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.diff-btn:hover {
+  border-color: rgba(0, 212, 255, 0.3);
+  color: var(--text);
+}
+
+.diff-btn.active {
+  background: rgba(0, 212, 255, 0.12);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+/* Best score */
+.title-best {
+  font-size: 10px;
+  color: var(--gold);
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+  opacity: 0.7;
+}
+
+/* Calibrate link */
+.title-calibrate {
+  margin-top: 12px;
+}
+
+.calibrate-link {
+  font-family: var(--font);
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.25);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  letter-spacing: 1px;
+}
+
+.calibrate-link:hover {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ================================
+   PAUSE SCREEN
+   ================================ */
+
+#pause-screen {
+  background: rgba(8, 8, 15, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 20;
+}
+
+.pause-content {
+  text-align: center;
+}
+
+.pause-title {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 8px;
+  text-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+  margin-bottom: 16px;
+}
+
+.pause-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* ================================
+   CALIBRATION SCREEN
+   ================================ */
+
+#calibration-screen {
+  background: rgba(8, 8, 15, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 20;
+}
+
+.calibration-content {
+  text-align: center;
+}
+
+.calibration-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 4px;
+  margin-bottom: 8px;
+}
+
+.calibration-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
 /* ================================
    RESULTS SCREEN
    ================================ */
+
+/* Grade reveal animation */
+.results-grade.grade-reveal {
+  animation: gradeReveal 0.5s cubic-bezier(0.17, 0.67, 0.3, 1.2);
+}
+
+@keyframes gradeReveal {
+  0% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
 
 #results-screen {
   background: rgba(8, 8, 15, 0.88);

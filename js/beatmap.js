@@ -3,12 +3,14 @@
 
 export class BeatmapManager {
   constructor() {
-    this.notes = [];
+    this.allNotes = []; // full note set from JSON
+    this.notes = [];    // active notes (filtered by difficulty)
     this.bpm = 128;
     this.offset = 0;
     this.trackName = '';
     this.duration = 0;
     this.sections = [];
+    this.lyrics = [];
   }
 
   async load(url) {
@@ -18,16 +20,15 @@ export class BeatmapManager {
       this.bpm = data.bpm || 134;
       this.offset = data.offset || 0;
       this.trackName = data.track || 'unknown';
-      this.notes = data.notes.map((n, i) => ({
+      this.allNotes = data.notes.map((n, i) => ({
         id: i,
-        time: n.time + this.offset,
+        time: n.time,
         lane: n.lane,
         type: n.type || 'tap',
         duration: n.duration || 0,
-        hit: false,
-        missed: false,
-        judged: false,
       }));
+      this.lyrics = data.lyrics || [];
+      this.notes = this.allNotes.map(n => ({ ...n, hit: false, missed: false, judged: false }));
       this.duration = this.notes.length > 0
         ? this.notes[this.notes.length - 1].time + 2
         : 0;
@@ -38,6 +39,39 @@ export class BeatmapManager {
       this.generateDefault();
       return true;
     }
+  }
+
+  applyDifficulty(level) {
+    const beat = 60 / this.bpm;
+    if (level === 'EASY') {
+      // Keep roughly every other note
+      this.notes = this.allNotes.filter((n, i) => i % 2 === 0)
+        .map(n => ({ ...n, time: n.time + this.offset, hit: false, missed: false, judged: false }));
+    } else if (level === 'HARD') {
+      // Add extra notes between existing ones
+      const extra = [];
+      for (let i = 0; i < this.allNotes.length - 1; i++) {
+        const curr = this.allNotes[i];
+        const next = this.allNotes[i + 1];
+        const gap = next.time - curr.time;
+        if (gap > beat * 1.5 && gap < beat * 4) {
+          extra.push({
+            id: 10000 + i,
+            time: curr.time + gap / 2,
+            lane: (curr.lane + 2) % 4,
+            type: 'tap',
+            duration: 0,
+          });
+        }
+      }
+      this.notes = [...this.allNotes, ...extra]
+        .sort((a, b) => a.time - b.time)
+        .map(n => ({ ...n, time: n.time + this.offset, hit: false, missed: false, judged: false }));
+    } else {
+      // NORMAL
+      this.notes = this.allNotes.map(n => ({ ...n, time: n.time + this.offset, hit: false, missed: false, judged: false }));
+    }
+    this.duration = this.notes.length > 0 ? this.notes[this.notes.length - 1].time + 2 : 0;
   }
 
   generateDefault() {
@@ -316,17 +350,16 @@ export class BeatmapManager {
   }
 
   initSections() {
-    const beat = 60 / this.bpm;
-    const bar = beat * 4;
     this.sections = [
-      { name: 'INTRO',         start: 0,       end: 8 * bar  },
-      { name: 'VERSE 1',       start: 8 * bar,  end: 24 * bar },
-      { name: 'CHORUS',        start: 24 * bar, end: 40 * bar },
-      { name: 'VERSE 2',       start: 40 * bar, end: 56 * bar },
-      { name: 'RAP BREAK',     start: 56 * bar, end: 72 * bar },
-      { name: 'BRIDGE',        start: 72 * bar, end: 80 * bar },
-      { name: 'FINAL CHORUS',  start: 80 * bar, end: 96 * bar },
-      { name: 'OUTRO',         start: 96 * bar, end: 104 * bar },
+      { name: 'INTRO',         start: 0,    end: 8   },
+      { name: 'VERSE 1',       start: 9,    end: 23  },
+      { name: 'CHORUS',        start: 24,   end: 39  },
+      { name: 'VERSE 2',       start: 40,   end: 46  },
+      { name: 'RAP BREAK',     start: 46,   end: 68  },
+      { name: 'BRIDGE',        start: 68,   end: 75  },
+      { name: 'CHORUS',        start: 76,   end: 105 },
+      { name: 'OUTRO',         start: 105,  end: 119 },
+      { name: 'FINAL CHORUS',  start: 119,  end: 136 },
     ];
   }
 

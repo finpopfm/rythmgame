@@ -33,6 +33,7 @@ export class Renderer {
     this.characterImages = [null, null, null, null];
     this.imagesLoaded = false;
     this.dpr = window.devicePixelRatio || 1;
+    this.approachTime = 2.0; // configurable per difficulty
   }
 
   init(canvas) {
@@ -94,7 +95,7 @@ export class Renderer {
 
     const hitLineY = h * 0.85;
     const topY = h * 0.08;
-    const approachTime = 2.0; // seconds for note to travel from top to hit line
+    const approachTime = this.approachTime; // configurable per difficulty
     const noteSpeed = (hitLineY - topY) / approachTime;
 
     return {
@@ -371,7 +372,7 @@ export class Renderer {
     ctx.font = `bold ${fontSize}px monospace`;
     ctx.textAlign = 'left';
     ctx.fillStyle = '#00d4ff';
-    ctx.fillText('FINPOP PAYMENTS ENGINE v1.0', isMobile ? 10 : 20, 20);
+    ctx.fillText('PAYMENTS ON LOCK: BEAT EDITION', isMobile ? 10 : 20, 20);
 
     // Status dot
     ctx.fillStyle = '#00ff88';
@@ -435,7 +436,7 @@ export class Renderer {
     ctx.fillText(`APPROVED: ${approvalRate.toFixed(1)}%`, w - (isMobile ? 10 : 20), layout.h - 8);
   }
 
-  renderJudgment(judgment, lane, time) {
+  renderJudgment(judgment, lane, time, timeDiff = 0) {
     if (!judgment) return;
 
     const layout = this.getLayout();
@@ -443,10 +444,18 @@ export class Renderer {
     const y = layout.hitLineY - 40;
     const color = JUDGMENT_COLORS[judgment] || '#ffffff';
 
+    // Main judgment text
+    let displayText = judgment;
+    // EARLY/LATE indicator for non-perfect hits
+    if (judgment !== Judgment.APPROVED && judgment !== Judgment.CHARGEBACK && timeDiff !== 0) {
+      const dir = timeDiff > 0 ? 'EARLY' : 'LATE';
+      displayText = `${judgment} ${dir}`;
+    }
+
     // Add to hit effects
     this.hitEffects.push({
       x, y,
-      text: judgment,
+      text: displayText,
       color,
       alpha: 1,
       scale: 1.5,
@@ -730,6 +739,60 @@ export class Renderer {
     ctx.shadowBlur = 30;
     ctx.fillText(count > 0 ? count.toString() : 'GO!', w / 2, h / 2);
     ctx.shadowBlur = 0;
+  }
+
+  // Lyrics karaoke display
+  renderLyrics(currentTime, lyrics) {
+    if (!lyrics || lyrics.length === 0) return;
+    const ctx = this.ctx;
+    const layout = this.getLayout();
+
+    // Find current lyric line
+    let current = null;
+    for (const line of lyrics) {
+      if (currentTime >= line.time && currentTime < line.end) {
+        current = line;
+        break;
+      }
+    }
+    if (!current) return;
+
+    const elapsed = currentTime - current.time;
+    const duration = current.end - current.time;
+    const progress = Math.min(elapsed / duration, 1);
+
+    // Fade in/out
+    let alpha = 1;
+    if (elapsed < 0.3) alpha = elapsed / 0.3;
+    if (currentTime > current.end - 0.3) alpha = (current.end - currentTime) / 0.3;
+    alpha = Math.max(0, Math.min(1, alpha));
+
+    const x = layout.w / 2;
+    const y = layout.hitLineY - 65;
+
+    ctx.globalAlpha = alpha * 0.7;
+    ctx.font = `bold ${layout.isMobile ? 12 : 15}px monospace`;
+    ctx.textAlign = 'center';
+
+    // Shadow text (full line, dim)
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillText(current.text, x, y);
+
+    // Highlighted portion (karaoke progress)
+    ctx.save();
+    const textWidth = ctx.measureText(current.text).width;
+    const clipW = textWidth * progress;
+    ctx.beginPath();
+    ctx.rect(x - textWidth / 2, y - 20, clipW, 30);
+    ctx.clip();
+    ctx.fillStyle = '#00d4ff';
+    ctx.shadowColor = '#00d4ff';
+    ctx.shadowBlur = 8;
+    ctx.fillText(current.text, x, y);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    ctx.globalAlpha = 1;
   }
 
   // Utility: hex color to r,g,b string

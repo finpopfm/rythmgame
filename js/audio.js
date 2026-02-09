@@ -223,4 +223,82 @@ export class AudioEngine {
       await this.ctx.resume();
     }
   }
+
+  // --- Pause support ---
+  suspendCtx() {
+    if (this.ctx && this.ctx.state === 'running') this.ctx.suspend();
+  }
+  resumeCtx() {
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  }
+}
+
+// ===========================================
+// SFX Engine — procedural hit/miss sounds
+// ===========================================
+export class SFXEngine {
+  constructor(audioCtxProvider) {
+    this.getCtx = audioCtxProvider; // function that returns AudioContext
+  }
+
+  play(judgment) {
+    const ctx = this.getCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    switch (judgment) {
+      case 'APPROVED':  this._ping(ctx, now, 880, 0.12, 0.18); break;
+      case 'PENDING':   this._ping(ctx, now, 520, 0.08, 0.12); break;
+      case 'DECLINED':  this._ping(ctx, now, 300, 0.06, 0.08); break;
+      case 'CHARGEBACK': this._buzz(ctx, now); break;
+    }
+  }
+
+  playMetronome(accent = false) {
+    const ctx = this.getCtx();
+    if (!ctx) return;
+    this._ping(ctx, ctx.currentTime, accent ? 1000 : 700, 0.15, 0.06);
+  }
+
+  _ping(ctx, now, freq, vol, dur) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + dur + 0.01);
+  }
+
+  _buzz(ctx, now) {
+    // Low buzz
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.value = 90;
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.2);
+
+    // Noise burst
+    const bufLen = ctx.sampleRate * 0.08;
+    const noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    const data = noiseBuf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1) * 0.5;
+    const noise = ctx.createBufferSource();
+    const ng = ctx.createGain();
+    noise.buffer = noiseBuf;
+    ng.gain.setValueAtTime(0.1, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    noise.connect(ng);
+    ng.connect(ctx.destination);
+    noise.start(now);
+    noise.stop(now + 0.1);
+  }
 }

@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>FINPOP — Payments on Lock</title>
+  <title>PAYMENTS ON LOCK: Beat Edition — FINPOP GAMES</title>
 
   <!-- SEO & Social -->
-  <meta name="description" content="FINPOP Rhythm Game — Tap to the beat, process transactions, avoid chargebacks. A fintech pop rhythm game.">
-  <meta property="og:title" content="FINPOP — Payments on Lock">
-  <meta property="og:description" content="Can you clear all transactions without a chargeback? Play the FINPOP rhythm game.">
+  <meta name="description" content="Tap to the beat, process every transaction, avoid chargebacks. A fintech pop rhythm game by FINPOP.">
+  <meta property="og:title" content="PAYMENTS ON LOCK: Beat Edition">
+  <meta property="og:description" content="Can you clear all transactions without a chargeback? Play the FINPOP rhythm game at beat.finpop.fm">
+  <meta property="og:url" content="https://beat.finpop.fm">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#08080f">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,9 +39,9 @@
   <!-- Title Screen -->
   <div id="title-screen" class="overlay">
     <div class="title-content">
-      <div class="title-badge">SEASON 1 · STARTUP FOUNDERS</div>
-      <div class="title-logo">FINPOP</div>
-      <div class="title-track">♪ PAYMENTS ON LOCK</div>
+      <div class="title-badge">FINPOP GAMES</div>
+      <div class="title-logo">PAYMENTS<br>ON LOCK</div>
+      <div class="title-track">Beat Edition</div>
 
       <div class="title-characters">
         <div class="char-badge">
@@ -65,11 +66,23 @@
         </div>
       </div>
 
+      <div class="title-difficulty">
+        <button class="diff-btn" data-diff="EASY">EASY</button>
+        <button class="diff-btn active" data-diff="NORMAL">NORMAL</button>
+        <button class="diff-btn" data-diff="HARD">HARD</button>
+      </div>
+
+      <div class="title-best" id="title-best" style="display:none;"></div>
+
       <div class="title-prompt">TAP TO START</div>
 
       <div class="title-keys">
         Use <kbd>D</kbd> <kbd>F</kbd> <kbd>J</kbd> <kbd>K</kbd> to hit notes<br>
-        or tap the lanes on mobile
+        or tap the lanes on mobile &nbsp;|&nbsp; <kbd>ESC</kbd> to pause
+      </div>
+
+      <div class="title-calibrate">
+        <button class="calibrate-link" id="calibrate-btn">Calibrate audio offset</button>
       </div>
     </div>
   </div>
@@ -130,6 +143,22 @@
         <button class="btn btn-secondary" onclick="gameReplay()">REPLAY</button>
         <button class="btn btn-spotify" onclick="openSpotify()">♪ SPOTIFY</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Pause Screen -->
+  <div id="pause-screen" class="overlay">
+    <div class="pause-content">
+      <div class="pause-title">PAUSED</div>
+      <div class="pause-sub">Click or press ESC to resume</div>
+    </div>
+  </div>
+
+  <!-- Calibration Screen -->
+  <div id="calibration-screen" class="overlay">
+    <div class="calibration-content">
+      <div class="calibration-title">AUDIO CALIBRATION</div>
+      <div class="calibration-sub">Tap to the metronome beat to calibrate timing</div>
     </div>
   </div>
 
