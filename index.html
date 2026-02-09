@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>FINPOP — Payments on Lock</title>
+
+  <!-- SEO & Social -->
+  <meta name="description" content="FINPOP Rhythm Game — Tap to the beat, process transactions, avoid chargebacks. A fintech pop rhythm game.">
+  <meta property="og:title" content="FINPOP — Payments on Lock">
+  <meta property="og:description" content="Can you clear all transactions without a chargeback? Play the FINPOP rhythm game.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#08080f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Favicon (inline SVG) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💳</text></svg>">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Game Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen" class="overlay active">
+    <div class="loading-content">
+      <div class="loading-logo">FINPOP</div>
+      <div class="loading-sub">PAYMENTS ENGINE v1.0</div>
+      <div class="load-progress">
+        <div class="load-progress-fill"></div>
+      </div>
+      <div class="load-message">Initializing...</div>
+    </div>
+  </div>
+
+  <!-- Title Screen -->
+  <div id="title-screen" class="overlay">
+    <div class="title-content">
+      <div class="title-badge">SEASON 1 · STARTUP FOUNDERS</div>
+      <div class="title-logo">FINPOP</div>
+      <div class="title-track">♪ PAYMENTS ON LOCK</div>
+
+      <div class="title-characters">
+        <div class="char-badge">
+          <div class="char-dot" style="background:#FFD700; color:#FFD700;"></div>
+          <span class="char-name" style="color:#FFD700;">LUNA</span>
+          <span class="char-role">CEO</span>
+        </div>
+        <div class="char-badge">
+          <div class="char-dot" style="background:#C77DFF; color:#C77DFF;"></div>
+          <span class="char-name" style="color:#C77DFF;">IRIS</span>
+          <span class="char-role">CTO</span>
+        </div>
+        <div class="char-badge">
+          <div class="char-dot" style="background:#00D4FF; color:#00D4FF;"></div>
+          <span class="char-name" style="color:#00D4FF;">NOVA</span>
+          <span class="char-role">CFO</span>
+        </div>
+        <div class="char-badge">
+          <div class="char-dot" style="background:#00FF88; color:#00FF88;"></div>
+          <span class="char-name" style="color:#00FF88;">VERA</span>
+          <span class="char-role">COO</span>
+        </div>
+      </div>
+
+      <div class="title-prompt">TAP TO START</div>
+
+      <div class="title-keys">
+        Use <kbd>D</kbd> <kbd>F</kbd> <kbd>J</kbd> <kbd>K</kbd> to hit notes<br>
+        or tap the lanes on mobile
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Screen -->
+  <div id="results-screen" class="overlay">
+    <div class="results-content">
+      <div class="results-header">SETTLEMENT REPORT</div>
+
+      <div class="results-grade" id="result-grade">S</div>
+      <div class="results-comment" id="result-comment"></div>
+
+      <div class="results-stats">
+        <div class="stat-box">
+          <div class="stat-label">TOTAL SCORE</div>
+          <div class="stat-value score" id="result-score">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">APPROVAL RATE</div>
+          <div class="stat-value approval" id="result-approval">0%</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">TX VOLUME</div>
+          <div class="stat-value volume" id="result-volume">$0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">MAX STREAK</div>
+          <div class="stat-value streak" id="result-streak">0x</div>
+        </div>
+      </div>
+
+      <div class="results-breakdown">
+        <div class="breakdown-item">
+          <div class="breakdown-label">APPROVED</div>
+          <div class="breakdown-value" id="result-approved-count">0</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-label">PENDING</div>
+          <div class="breakdown-value" id="result-pending-count">0</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-label">DECLINED</div>
+          <div class="breakdown-value" id="result-declined-count">0</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-label">CHARGEBACK</div>
+          <div class="breakdown-value" id="result-chargeback-count">0</div>
+        </div>
+      </div>
+
+      <div class="results-risk">
+        <span class="results-risk-label">RISK LEVEL: </span>
+        <span id="result-risk">LOW</span>
+      </div>
+
+      <div class="results-buttons">
+        <button class="btn btn-primary" id="share-btn" onclick="gameShare()">SHARE REPORT</button>
+        <button class="btn btn-secondary" onclick="gameReplay()">REPLAY</button>
+        <button class="btn btn-spotify" onclick="openSpotify()">♪ SPOTIFY</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Challenge Banner (shared score) -->
+  <div id="challenge-banner" class="shared-banner">
+    <span class="challenge-text">Someone challenged you! Can you beat their score?</span>
+  </div>
+
+  <!-- Main Game Script (ES Module) -->
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>
